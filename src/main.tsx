@@ -1,10 +1,8 @@
-import {StrictMode} from 'react';
-import {createRoot} from 'react-dom/client';
-import App from './App.tsx';
-import './index.css';
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
 
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <App />
-  </StrictMode>,
-);
+// https://vitejs.dev/config/
+export default defineConfig({
+  plugins: [react()],
+  base: '/Local_Trip_Review/', // <-- Bạn chỉ cần thêm duy nhất dòng này vào đây
+})
