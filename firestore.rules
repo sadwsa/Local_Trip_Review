@@ -1,0 +1,178 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Catch-all to deny by default
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Global Functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isAdmin() {
+      return isSignedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "Admin";
+    }
+
+    // Validations
+    function isValidUser(data) {
+      return data.keys().hasAll(['email', 'name', 'role']) &&
+             data.email is string && data.email.size() <= 100 &&
+             data.name is string && data.name.size() <= 100 &&
+             data.role is string && (data.role == 'Admin' || data.role == 'Customer') &&
+             (!('avatarUrl' in data) || (data.avatarUrl is string && data.avatarUrl.size() <= 1048487)) &&
+             (!('bio' in data) || (data.bio is string && data.bio.size() <= 500)) &&
+             (!('savedDestinations' in data) || (data.savedDestinations is list && data.savedDestinations.size() <= 100));
+    }
+
+    function isValidCategory(data) {
+      return data.keys().hasAll(['name']) &&
+             data.name is string && data.name.size() <= 100 &&
+             (!('icon' in data) || (data.icon is string && data.icon.size() <= 1000));
+    }
+
+    function isValidTag(data) {
+      return data.keys().hasAll(['name']) &&
+             data.name is string && data.name.size() <= 50;
+    }
+
+    function isValidDestination(data) {
+      return data.keys().hasAll(['name', 'description', 'imageUrl', 'categoryId', 'averageRating', 'reviewCount', 'checkInCount']) &&
+             data.name is string && data.name.size() <= 200 &&
+             data.description is string && data.description.size() <= 2000 &&
+             data.imageUrl is string && data.imageUrl.size() <= 1048487 &&
+             data.categoryId is string && isValidId(data.categoryId) &&
+             data.averageRating is number &&
+             data.reviewCount is number &&
+             data.checkInCount is number &&
+             (!('galleryUrls' in data) || (data.galleryUrls is list && data.galleryUrls.size() <= 20)) &&
+             (!('tags' in data) || (data.tags is list && data.tags.size() <= 20)) &&
+             (!('location' in data) || (data.location is string && data.location.size() <= 500)) &&
+             (!('latitude' in data) || data.latitude is number) &&
+             (!('longitude' in data) || data.longitude is number);
+    }
+
+    function isValidReview(data) {
+      return data.keys().hasAll(['destinationId', 'userId', 'rating', 'comment', 'createdAt', 'userName']) &&
+             data.destinationId is string && isValidId(data.destinationId) &&
+             data.userId is string && (data.userId == request.auth.uid || isAdmin()) &&
+             data.rating is number && data.rating >= 1 && data.rating <= 5 &&
+             data.comment is string && data.comment.size() <= 1000 &&
+             data.createdAt is string && data.createdAt.size() <= 50 &&
+             data.userName is string && data.userName.size() <= 100 &&
+             (!('userAvatar' in data) || data.userAvatar == null || (data.userAvatar is string && data.userAvatar.size() <= 1048487)) &&
+             (!('images' in data) || (data.images is list && data.images.size() <= 10));
+    }
+
+    function isValidCheckIn(data) {
+      return data.keys().hasAll(['destinationId', 'userId', 'timestamp']) &&
+             data.destinationId is string && isValidId(data.destinationId) &&
+             data.userId is string && (data.userId == request.auth.uid || isAdmin()) &&
+             data.timestamp is string && data.timestamp.size() <= 50;
+    }
+
+    function isValidReport(data) {
+      return data.keys().hasAll(['reviewId', 'reportedByUserId', 'reason', 'isResolved', 'createdAt']) &&
+             data.reviewId is string && isValidId(data.reviewId) &&
+             data.reportedByUserId is string && (data.reportedByUserId == request.auth.uid || isAdmin()) &&
+             data.reason is string && data.reason.size() <= 1000 &&
+             data.isResolved is bool &&
+             data.createdAt is string && data.createdAt.size() <= 50;
+    }
+
+    function isValidFAQ(data) {
+      return data.keys().hasAll(['question', 'answer']) &&
+             data.question is string && data.question.size() <= 500 &&
+             data.answer is string && data.answer.size() <= 2000;
+    }
+
+    // Match users
+    match /users/{userId} {
+      allow read: if isSignedIn(); // Publicly readable for now, or just limit to the user to protect privacy
+      allow create: if isSignedIn() && request.auth.uid == userId && isValidUser(incoming()) && (incoming().role == 'Customer' || (incoming().role == 'Admin' && request.auth.token.email == 'phuchhce180985@fpt.edu.vn')); // Admin must be assigned manually or by an existing admin
+      allow update: if isSignedIn() && (
+        (request.auth.uid == userId && isValidUser(incoming()) && incoming().diff(existing()).affectedKeys().hasOnly(['name', 'avatarUrl', 'bio', 'savedDestinations'])) ||
+        isAdmin()
+      );
+      allow delete: if isAdmin() || (isSignedIn() && request.auth.uid == userId);
+      allow list: if isAdmin();
+    }
+
+    // Match categories
+    match /categories/{categoryId} {
+      allow read: if true;
+      allow create: if isAdmin() && isValidCategory(incoming());
+      allow update: if isAdmin() && isValidCategory(incoming());
+      allow delete: if isAdmin();
+    }
+
+    // Match tags
+    match /tags/{tagId} {
+      allow read: if true;
+      allow create: if isAdmin() && isValidTag(incoming());
+      allow update: if isAdmin() && isValidTag(incoming());
+      allow delete: if isAdmin();
+    }
+
+    // Match destinations
+    match /destinations/{destinationId} {
+      allow read: if true;
+      allow create: if isAdmin() && isValidDestination(incoming());
+      allow update: if (isAdmin() && isValidDestination(incoming())) ||
+                       (isSignedIn() && incoming().diff(existing()).affectedKeys().hasOnly(['checkInCount', 'reviewCount', 'averageRating']) &&
+                        (!('checkInCount' in incoming()) || incoming().checkInCount is number) &&
+                        (!('reviewCount' in incoming()) || incoming().reviewCount is number) &&
+                        (!('averageRating' in incoming()) || incoming().averageRating is number));
+      allow delete: if isAdmin();
+    }
+
+    // Match reviews
+    match /reviews/{reviewId} {
+      allow read: if true;
+      allow create: if isSignedIn() && isValidReview(incoming()) && exists(/databases/$(database)/documents/destinations/$(incoming().destinationId));
+      allow update: if isSignedIn() && (
+        (request.auth.uid == existing().userId && isValidReview(incoming()) && incoming().diff(existing()).affectedKeys().hasOnly(['rating', 'comment'])) ||
+        isAdmin()
+      );
+      allow delete: if isSignedIn() && (request.auth.uid == existing().userId || isAdmin());
+    }
+
+    // Match checkIns
+    match /checkIns/{checkInId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && isValidCheckIn(incoming()) && exists(/databases/$(database)/documents/destinations/$(incoming().destinationId));
+      allow update: if false; // immutable
+      allow delete: if isAdmin();
+    }
+
+    // Match reports
+    match /reports/{reportId} {
+      allow read: if isAdmin();
+      allow create: if isSignedIn() && isValidReport(incoming()) && exists(/databases/$(database)/documents/reviews/$(incoming().reviewId));
+      allow update: if isAdmin() && isValidReport(incoming()) && incoming().diff(existing()).affectedKeys().hasOnly(['isResolved']);
+      allow delete: if isAdmin();
+      allow list: if isAdmin();
+    }
+
+    // Match FAQs
+    match /faqs/{faqId} {
+      allow read: if true;
+      allow create: if isAdmin() && isValidFAQ(incoming());
+      allow update: if isAdmin() && isValidFAQ(incoming());
+      allow delete: if isAdmin();
+    }
+  }
+}
