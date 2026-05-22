@@ -1,0 +1,8 @@
+{
+  "name": "EXE101 - Destination Explorer",
+  "description": "Professional mobile-first travel destination application with curated destinations, reviews, and check-ins.",
+  "requestFramePermissions": [
+    "geolocation"
+  ],
+  "majorCapabilities": []
+}

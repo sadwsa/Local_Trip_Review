@@ -1,0 +1,41 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600;1,700&display=swap&subset=vietnamese,latin,latin-ext');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Playfair Display", ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
+
+  --color-primary-50: #f0fdfa;
+  --color-primary-100: #ccfbf1;
+  --color-primary-200: #99f6e4;
+  --color-primary-300: #5eead4;
+  --color-primary-400: #2dd4bf;
+  --color-primary-500: #14b8a6;
+  --color-primary-600: #0d9488; /* Deep teal primary */
+  --color-primary-700: #0f766e;
+  --color-primary-800: #115e59;
+  --color-primary-900: #134e4a;
+  --color-primary-950: #042f2e;
+
+  --color-accent-50: #fdf8f4;
+  --color-accent-100: #faeee4;
+  --color-accent-200: #f5cba7; /* Warm sand accent */
+  --color-accent-300: #f0a36a;
+  --color-accent-400: #e87b32;
+  --color-accent-500: #df5b11;
+  --color-accent-600: #ba400a;
+  --color-accent-700: #9a320b;
+  --color-accent-800: #7c2a0d;
+  --color-accent-900: #64240e;
+  --color-accent-950: #361005;
+}
+
+@layer base {
+  body {
+    @apply font-sans antialiased bg-gray-50 text-slate-800;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-serif italic font-bold text-slate-900;
+  }
+}
+

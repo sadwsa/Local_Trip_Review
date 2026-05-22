@@ -1,0 +1,147 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile information.",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string" },
+        "name": { "type": "string" },
+        "avatarUrl": { "type": "string" },
+        "bio": { "type": "string" },
+        "role": { "type": "string", "enum": ["Admin", "Customer"] }
+      },
+      "required": ["email", "name", "role"]
+    },
+    "Category": {
+      "title": "Category",
+      "description": "Destination category.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "icon": { "type": "string" }
+      },
+      "required": ["name"]
+    },
+    "Tag": {
+      "title": "Tag",
+      "description": "Destination tag.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" }
+      },
+      "required": ["name"]
+    },
+    "Destination": {
+      "title": "Destination",
+      "description": "A travel destination.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "imageUrl": { "type": "string" },
+        "galleryUrls": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "latitude": { "type": "number" },
+        "longitude": { "type": "number" },
+        "categoryId": { "type": "string" },
+        "tags": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "averageRating": { "type": "number" },
+        "reviewCount": { "type": "number" },
+        "checkInCount": { "type": "number" }
+      },
+      "required": [
+        "name", "description", "imageUrl", "categoryId",
+        "averageRating", "reviewCount", "checkInCount"
+      ]
+    },
+    "Review": {
+      "title": "Review",
+      "description": "User review for a destination.",
+      "type": "object",
+      "properties": {
+        "destinationId": { "type": "string" },
+        "userId": { "type": "string" },
+        "rating": { "type": "number" },
+        "comment": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "userName": { "type": "string" },
+        "userAvatar": { "type": "string" }
+      },
+      "required": ["destinationId", "userId", "rating", "comment", "createdAt", "userName"]
+    },
+    "CheckIn": {
+      "title": "CheckIn",
+      "description": "User check-in at a destination.",
+      "type": "object",
+      "properties": {
+        "destinationId": { "type": "string" },
+        "userId": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["destinationId", "userId", "timestamp"]
+    },
+    "Report": {
+      "title": "Report",
+      "description": "Report for a review.",
+      "type": "object",
+      "properties": {
+        "reviewId": { "type": "string" },
+        "reportedByUserId": { "type": "string" },
+        "reason": { "type": "string" },
+        "isResolved": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["reviewId", "reportedByUserId", "reason", "isResolved", "createdAt"]
+    },
+    "FAQ": {
+      "title": "FAQ",
+      "description": "Frequently Asked Question.",
+      "type": "object",
+      "properties": {
+        "question": { "type": "string" },
+        "answer": { "type": "string" }
+      },
+      "required": ["question", "answer"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/User" },
+      "description": "User profiles."
+    },
+    "/categories/{categoryId}": {
+      "schema": { "$ref": "#/entities/Category" },
+      "description": "Destination categories."
+    },
+    "/tags/{tagId}": {
+      "schema": { "$ref": "#/entities/Tag" },
+      "description": "Destination tags."
+    },
+    "/destinations/{destinationId}": {
+      "schema": { "$ref": "#/entities/Destination" },
+      "description": "Destinations available."
+    },
+    "/reviews/{reviewId}": {
+      "schema": { "$ref": "#/entities/Review" },
+      "description": "Reviews of destinations."
+    },
+    "/checkIns/{checkInId}": {
+      "schema": { "$ref": "#/entities/CheckIn" },
+      "description": "Check-ins by users."
+    },
+    "/reports/{reportId}": {
+      "schema": { "$ref": "#/entities/Report" },
+      "description": "Reports."
+    },
+    "/faqs/{faqId}": {
+      "schema": { "$ref": "#/entities/FAQ" },
+      "description": "FAQs."
+    }
+  }
+}
