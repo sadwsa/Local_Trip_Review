@@ -24,7 +24,9 @@ service cloud.firestore {
     }
 
     function isAdmin() {
-      return isSignedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "Admin";
+      return isSignedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+             (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "Admin" || 
+              get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin");
     }
 
     // Validations
@@ -32,7 +34,7 @@ service cloud.firestore {
       return data.keys().hasAll(['email', 'name', 'role']) &&
              data.email is string && data.email.size() <= 100 &&
              data.name is string && data.name.size() <= 100 &&
-             data.role is string && (data.role == 'Admin' || data.role == 'Customer') &&
+             data.role is string && (data.role == 'Admin' || data.role == 'Customer' || data.role == 'admin' || data.role == 'customer') &&
              (!('avatarUrl' in data) || (data.avatarUrl is string && data.avatarUrl.size() <= 1048487)) &&
              (!('bio' in data) || (data.bio is string && data.bio.size() <= 500)) &&
              (!('savedDestinations' in data) || (data.savedDestinations is list && data.savedDestinations.size() <= 100));
@@ -102,7 +104,9 @@ service cloud.firestore {
     // Match users
     match /users/{userId} {
       allow read: if isSignedIn(); // Publicly readable for now, or just limit to the user to protect privacy
-      allow create: if isSignedIn() && request.auth.uid == userId && isValidUser(incoming()) && (incoming().role == 'Customer' || (incoming().role == 'Admin' && request.auth.token.email == 'phuchhce180985@fpt.edu.vn')); // Admin must be assigned manually or by an existing admin
+      allow create: if isSignedIn() && request.auth.uid == userId && isValidUser(incoming()) && 
+                    (incoming().role == 'Customer' || incoming().role == 'customer' || 
+                     ((incoming().role == 'Admin' || incoming().role == 'admin') && request.auth.token.email == 'phuchhce180985@fpt.edu.vn')); // Admin must be assigned manually or by an existing admin
       allow update: if isSignedIn() && (
         (request.auth.uid == userId && isValidUser(incoming()) && incoming().diff(existing()).affectedKeys().hasOnly(['name', 'avatarUrl', 'bio', 'savedDestinations'])) ||
         isAdmin()
